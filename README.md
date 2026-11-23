@@ -2,46 +2,133 @@
 
 # kenshu-loop
 
-**検収型エージェントループ。** 製造業の「発注 → 納品 → 受入検収」をモデルに、
-受注AIが実装と一緒に「何をどう検査すべきか（基準・根拠）」と検査結果を提出し、
-別セッションの検収AIが元の要求に照らして成果物と検査基準の妥当性を審査します。
+**AI-Loop(Acceptance Inspection Loop)** 
+
+製造業の「発注 → 納品 → 受入検収」をモデルに、受注AIが実装と一緒に「何をどう検査すべきか（基準・根拠）」と検査結果を提出し、別セッションの検収AIが元の要求に照らして成果物と検査基準の妥当性を審査します。
 
 - 人間は **やりたいこと・利用状況・守るべき制約** を発注書に書くだけ。通常進行に人間の承認ゲートはありません。
 - 「受注AIが完了と言った」＝**納品開始**。オーケストレータが新しい環境で基準を再実行し、検収AIが利用者として試し、技術審査を通って初めて `accepted` です。
 - 実行不能・情報不足・予算超過は `blocked` / `limit_reached` / `failed` として返し、合格や完了に偽装しません。
 - 初版の対象は **CLI/TUI** の成果物。ハーネスは **Claude Code**（adapterで差し替え可能）。
 
-## 導入（Linux / Nix）
+## 全体の流れ
 
-必要なもの: Node.js 22.18 以上（開発・検証は v24.22 で実施）、git、Claude Code CLI（`claude`、認証済み）。
+人間が話しかけるのは Claude Code だけです。Claude Code は **スキル**（`skills/kenshu-loop/SKILL.md`）の手順に沿って発注書を作り、
+**CLI**（`kenshu-loop`）を実行します。CLI は受注AIと検収AIを、それぞれ別の Claude Code プロセスとして起動してループを回します。
 
-```sh
-git clone https://github.com/takeshiD/kenshu-loop.git
-cd kenshu-loop
-npm ci
-npm run build
-npm link            # または: node dist/cli.js ... で直接実行
+```mermaid
+graph TD
+    human --> 
 ```
 
-Nix の場合は `nix shell nixpkgs#nodejs_24 nixpkgs#git` などで Node と git を用意してください。
-端末操作には [`@microsoft/tui-test`](https://github.com/microsoft/tui-test) のプリビルドバイナリ（linux-x64-gnu 等）を使います。
-コンパイラや Python は不要です（NixOS 上で確認済み）。
+```mermaid
+sequenceDiagram
+    actor H as 人間
+    participant S as Claude Code<br/>(kenshu-loop スキル)
+    participant O as kenshu-loop CLI<br/>(オーケストレータ)
+    participant C as 受注AI<br/>(別プロセス)
+    participant I as 検収AI<br/>(別セッション)
 
-### Agent Skill として導入
+    H->>S: 「kenshu-loopで◯◯を作って」
+    S->>S: 依頼を order.json（要求 R1, R2…）に整理
+    S->>O: kenshu-loop init / run
 
-`skills/kenshu-loop/` は Agent Skill（`SKILL.md` に name/description frontmatter）です。プロジェクトで使うには:
+    loop 受入されるまで（回数・時間・予算に上限あり）
+        O->>C: 発注書（2回目以降は差し戻し理由・問い合わせも渡す）
+        C->>C: 対象ディレクトリで実装
+        C-->>O: 納品書（setup・検査基準・自己チェック）
+        O->>O: 納品書を検証（スキーマ・基準不足・基準の無断変更）
+        O->>O: 一時ディレクトリにコピーし、検査基準を自分で再実行
+        alt 検証が不合格
+            O->>O: 検収AIを呼ばずに自動で差し戻し
+        else 検証が合格
+            O->>I: 第1段: 要求だけを渡す（実装・納品書は見せない）
+            I->>I: 利用者として実際に操作（TUIは term で PTY 操作）
+            O->>I: 第2段: 納品書・検証結果・実装を渡す
+            I-->>O: 判定（accepted / rework / inquiry / blocked）
+            O->>O: 判定の整合性と成果物の fingerprint を確認して反映
+        end
+    end
+
+    O-->>S: 終了コード + .kenshu/DELIVERY.md
+    S-->>H: 使い始め方 / 足りない情報 を報告
+```
+
+各ラウンドの判定で、次にどうなるかは以下のとおりです。
+
+```mermaid
+flowchart TD
+    A[受注AIが納品] --> B{CLIが基準を再実行}
+    B -- 不合格 --> R[差し戻し]
+    B -- 合格 --> T[検収AI: 利用者試行] --> V{検収AI: 技術審査}
+    V -- accepted --> OK([accepted: 受入完了 / 終了コード 0])
+    V -- rework --> R
+    V -- inquiry --> Q[質問を受注AIへ渡す]
+    V -- blocked --> BL([blocked: 情報不足・実行不能 / 終了コード 2])
+    R --> L{上限に達した?}
+    Q --> L
+    L -- いいえ --> A
+    L -- はい --> LR([limit_reached / 終了コード 3])
+```
+
+差し戻しの原因になったチェックは回帰基準 `REG*` として残り、以後のラウンドでも毎回再実行されます。
+実行エラーは `failed`（終了コード 4）、Ctrl-C は `interrupted`（130）になり、どちらも `resume` で再開できます。
+
+## 導入
+
+必要なもの: Node.js 22.18 以上と npm（開発・検証は v24.22 で実施）、git、Claude Code CLI（`claude`、認証済み）。
+
+配布物はスキルのディレクトリ `skills/kenshu-loop/` だけです。CLI もその中の `scripts/` に入っているので、**スキルを入れれば CLI も一緒に入ります**。
+ビルドも PATH の設定も要りません。
 
 ```sh
-mkdir -p <your-project>/.claude/skills
+# skills CLI（https://skills.sh）。-g でユーザー全体に入れる
+npx skills add takeshiD/kenshu-loop -a claude-code
+
+# または Claude Code のプラグインとして
+/plugin marketplace add takeshiD/kenshu-loop
+/plugin install kenshu-loop@kenshu-loop
+
+# または手でコピー
 cp -r skills/kenshu-loop <your-project>/.claude/skills/
 ```
 
-Claude Code で「kenshu-loopで◯◯を発注して」と頼むと、スキルの手順に沿って発注書を作り CLI を実行します。
+Claude Code で「kenshu-loopで◯◯を発注して」と頼むと、スキルの手順に沿って発注書を作り、同梱の CLI を実行します。
 ランナーも同じ `references/*.md` を受注AI・検収AIのシステムプロンプトとして読み込みます（役割と手順の唯一の情報源）。
+
+### 同梱 CLI の仕組み
+
+```
+skills/kenshu-loop/
+├── SKILL.md              # 手順（発注書の作り方・CLI の呼び方）
+├── references/           # 役割ごとの手順。受注AI・検収AIのシステムプロンプトにもなる
+├── assets/
+│   └── order-example.json  # 発注書の雛形
+└── scripts/
+    ├── kenshu-loop.mjs   # CLI の入口
+    ├── package.json      # 実行時の依存（zod, @microsoft/tui-test）
+    ├── package-lock.json
+    └── src/              # CLI 本体（TypeScript。Node の型ストリッピングでそのまま実行）
+```
+
+`node <skill>/scripts/kenshu-loop.mjs <サブコマンド>` で実行します。入口のスクリプトは、初回だけ `npm ci --omit=dev` で依存を `scripts/node_modules` に入れます。
+依存を入れ直すのは `package-lock.json` が変わったときだけです。
+tui-test はプラットフォーム別のプリビルドバイナリ（linux-x64-gnu 等）なので同梱せず、その環境で取得します。
+そのため初回はネットワークが必要です。コンパイラや Python は不要です（NixOS 上で確認済み）。
+事前に入れておくには `node <skill>/scripts/kenshu-loop.mjs setup` を実行します。
+
+人間が端末から `kenshu-loop` として使いたい場合は、入口のスクリプトへのシンボリックリンクを PATH 上に置きます（任意）。
+
+```sh
+ln -s "$PWD/.claude/skills/kenshu-loop/scripts/kenshu-loop.mjs" ~/.local/bin/kenshu-loop
+```
+
+Nix の場合は `nix shell nixpkgs#nodejs_24 nixpkgs#git` などで Node と git を用意してください。
 
 ## 最小利用例
 
 ```sh
+# kenshu-loop = node <skill>/scripts/kenshu-loop.mjs（上記のリンクを置いた場合はそのまま）
 # 1. 発注書を用意（雛形: kenshu-loop schema order-example）
 kenshu-loop schema order-example > order.json   # 編集する
 
@@ -76,17 +163,17 @@ kenshu-loop resume --dir ./my-tool
                                     (fingerprint再計算で古い証拠を排除 / 回帰基準へ昇格)
 ```
 
-| モジュール | 役割 |
+| モジュール（`skills/kenshu-loop/` 配下） | 役割 |
 |---|---|
-| `src/schema.ts` | 発注書・納品書・試行レポート・判定・設定・状態の zod スキーマ（実行時検証、`--json-schema` 生成） |
-| `src/validate.ts` | 参照整合性、基準不足、合格済み基準の変更理由、判定の整合性、最終ゲート |
-| `src/orchestrator.ts` | 状態遷移・再開・上限・中断・判定反映 |
-| `src/verify.ts` | 新しい環境での setup と基準再実行（検証済み証拠） |
-| `src/workspace.ts` | 納品物の識別（fingerprint）とコピー |
-| `src/harness/` | `HarnessAdapter` 境界と Claude Code 実装 |
-| `src/terminal/` | `TerminalDriver`（tui-test を包む薄いadapter）、シナリオ実行器、エージェント用 `term` デーモン |
-| `src/exec.ts` | コマンド実行（プロセスグループ単位のtimeout/中断）、隔離環境変数 |
-| `skills/kenshu-loop/` | 配布用 Agent Skill（発注整理・受注・検収・端末操作の手順） |
+| `scripts/src/schema.ts` | 発注書・納品書・試行レポート・判定・設定・状態の zod スキーマ（実行時検証、`--json-schema` 生成） |
+| `scripts/src/validate.ts` | 参照整合性、基準不足、合格済み基準の変更理由、判定の整合性、最終ゲート |
+| `scripts/src/orchestrator.ts` | 状態遷移・再開・上限・中断・判定反映 |
+| `scripts/src/verify.ts` | 新しい環境での setup と基準再実行（検証済み証拠） |
+| `scripts/src/workspace.ts` | 納品物の識別（fingerprint）とコピー |
+| `scripts/src/harness/` | `HarnessAdapter` 境界と Claude Code 実装 |
+| `scripts/src/terminal/` | `TerminalDriver`（tui-test を包む薄いadapter）、シナリオ実行器、エージェント用 `term` デーモン |
+| `scripts/src/exec.ts` | コマンド実行（プロセスグループ単位のtimeout/中断）、隔離環境変数 |
+| `scripts/kenshu-loop.mjs` | CLI の入口（Node のバージョン確認・初回の依存導入・`src/cli.ts` の読み込み） |
 
 DI境界: `HarnessAdapter`（ハーネス）、`CommandRunner`（コマンド実行）、`DriverFactory`/`TerminalDriver`（端末操作）、`Store`（状態保存）。
 
@@ -175,7 +262,7 @@ AIの探索操作（`term start/press/...`）、検査基準の `tui` シナリ�
 
 - 単体（23件）: スキーマ・参照整合性・基準不足・基準変更・判定ゲート・ロック・fingerprint・redact・adapter のフラグ/エラー分類
 - 統合（13件）: 実 `ClaudeCodeAdapter` + 偽 `claude` プロセス + 実プロセス検証で、差し戻し→修正→受入、基準不足、自己申告の虚偽、古い証拠、別成果物の判定、blocked（正当/不当）、反復・予算・1回予算上限、ハーネス異常、問い合わせ、基準の無断弱体化、failed からの resume
-- E2E（9件）: ビルド済み `dist/cli.js` を実プロセスとして起動。終了コード、SIGINT 中断と resume、多重起動拒否、TUI 納品物の PTY 検証（不具合版の自動差し戻し→修正→受入）、`term` デーモン操作、`run-scenario`、`npm pack` → 別ディレクトリへのインストール後の起動
+- E2E（9件）: スキル同梱の CLI 入口 `scripts/kenshu-loop.mjs` を実プロセスとして起動。終了コード、SIGINT 中断と resume、多重起動拒否、TUI 納品物の PTY 検証（不具合版の自動差し戻し→修正→受入）、`term` デーモン操作、`run-scenario`、スキルのディレクトリだけを別の場所へコピーし、依存の無い状態からの初回セットアップと起動
 - live smoke: 実 Claude Code (sonnet) で CLI 1件・TUI 1件がいずれも1回目で accepted（$0.70 / $0.53）。TUI では検収AIが `kenshu-loop term` で実際にPTY操作した。差し戻しループの実モデル検証は未実施
 
 ## 制約・未検証
@@ -200,9 +287,13 @@ git commit -m "ci: GitHub Actions を有効化" && git push
 ## 開発
 
 ```sh
-npm ci
+npm ci              # 開発用の依存（typescript 等）。postinstall で同梱 CLI の実行時依存も入る
 npm run typecheck
-npm test            # 単体 + 統合（Node の型ストリッピングで src を直接実行）
-npm run test:e2e    # ビルド後に配布物を実プロセス/PTYで検証
+npm test            # 単体 + 統合
+npm run test:e2e    # 同梱 CLI を実プロセス/PTYで検証（スキルだけをコピーした状態からの初回セットアップを含む）
 node scripts/live-smoke.mjs --model sonnet --budget 3   # 実 Claude Code（課金あり）
 ```
+
+リポジトリ直下の `package.json` は開発用（型検査・テスト）で、配布物には含まれません。
+CLI のバージョンと実行時の依存は `skills/kenshu-loop/scripts/package.json` で管理します。
+依存を変えたら `cd skills/kenshu-loop/scripts && npm install` で `package-lock.json` を更新してください（入口のスクリプトはロックの変化を検知して入れ直します）。

@@ -1,33 +1,18 @@
 {
-  "name": "kenshu-loop",
-  "version": "0.1.0",
-  "description": "検収型エージェントループ: 受注AIが実装と検査基準・証拠を納品し、別セッションの検収AIが要求に照らして審査するCLI",
-  "type": "module",
-  "license": "UNLICENSED",
+  "name": "kenshu-loop-dev",
+  "description": "kenshu-loop スキルの開発用ハーネス（型検査・テスト）。配布物はスキルのディレクトリ skills/kenshu-loop/ だけ",
   "private": true,
-  "bin": {
-    "kenshu-loop": "dist/cli.js"
-  },
-  "files": [
-    "dist",
-    "skills",
-    "examples",
-    "README.md"
-  ],
+  "type": "module",
   "engines": {
     "node": ">=22.18"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && node scripts/postbuild.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "postinstall": "node skills/kenshu-loop/scripts/kenshu-loop.mjs setup",
+    "typecheck": "tsc -p tsconfig.json",
     "test": "node --test --test-concurrency=1 \"test/unit/*.test.ts\" \"test/integration/*.test.ts\"",
-    "test:e2e": "npm run build && node --test --test-concurrency=1 \"test/e2e/*.test.ts\"",
-    "test:all": "npm run build && npm test && node --test --test-concurrency=1 \"test/e2e/*.test.ts\"",
+    "test:e2e": "node --test --test-concurrency=1 \"test/e2e/*.test.ts\"",
+    "test:all": "npm test && npm run test:e2e",
     "test:unit": "node --test \"test/unit/*.test.ts\""
-  },
-  "dependencies": {
-    "@microsoft/tui-test": "0.1.1",
-    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

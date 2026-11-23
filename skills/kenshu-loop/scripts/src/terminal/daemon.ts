@@ -166,4 +166,5 @@ export async function startDaemon(dir: string, cfg: TermSessionConfig, cliPath: 
   throw new Error("端末デーモンが起動しませんでした");
 }
 
-export const CLI_PATH = fileURLToPath(new URL("../cli.js", import.meta.url));
+/** CLI の入口（依存の導入を済ませてから src/cli.ts を読む）。デーモンやエージェントへ渡すコマンドはこれを指す。 */
+export const CLI_PATH = fileURLToPath(new URL("../../kenshu-loop.mjs", import.meta.url));

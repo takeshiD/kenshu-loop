@@ -28,7 +28,7 @@ import { killAllChildren } from "./exec.ts";
 
 export interface OrchestratorDeps extends VerifyDeps {
   harness: HarnessAdapter;
-  /** エージェントに渡す `kenshu-loop` コマンドの前置き（例: node /abs/dist/cli.js） */
+  /** エージェントに渡す `kenshu-loop` コマンドの前置き（例: node /abs/skills/kenshu-loop/scripts/kenshu-loop.mjs） */
   cliCommand: string;
   log: (line: string) => void;
   now?: () => number;

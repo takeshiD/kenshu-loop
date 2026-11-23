@@ -1,11 +1,11 @@
-// モデルへ渡す役割と手順はスキル(skills/kenshu-loop/references)を唯一の情報源として読み込む。
+// モデルへ渡す役割と手順はスキル(このファイルから見て ../../references)を唯一の情報源として読み込む。
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { Order, Submission, TrialReport } from "./schema.ts";
 import type { Verification } from "./verify.ts";
 import type { Identity } from "./validate.ts";
 
-export const SKILL_DIR = fileURLToPath(new URL("../skills/kenshu-loop/", import.meta.url));
+export const SKILL_DIR = fileURLToPath(new URL("../../", import.meta.url));
 
 function ref(name: string): string {
   return readFileSync(`${SKILL_DIR}references/${name}`, "utf8");

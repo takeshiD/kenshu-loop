@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { parseArgs } from "node:util";
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -244,7 +243,7 @@ function cmdSchema(args: string[]): number {
     verdict: jsonSchemaOf(Verdict),
     scenario: jsonSchemaOf(Scenario),
     step: jsonSchemaOf(Step),
-    "order-example": JSON.parse(readFileSync(join(SKILL_DIR, "..", "..", "examples", "memo-cli", "order.json"), "utf8")),
+    "order-example": JSON.parse(readFileSync(join(SKILL_DIR, "assets", "order-example.json"), "utf8")),
   };
   if (!name || !(name in map)) {
     process.stderr.write(`schema <${Object.keys(map).join("|")}>\n`);

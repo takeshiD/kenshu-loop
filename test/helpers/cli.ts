@@ -2,7 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { ROOT } from "./project.ts";
 
-export const CLI = join(ROOT, "dist", "cli.js");
+export const CLI = join(ROOT, "skills", "kenshu-loop", "scripts", "kenshu-loop.mjs");
 
 export function cli(args: string[], opts: { cwd?: string; env?: Record<string, string>; input?: string } = {}) {
   const r = spawnSync(process.execPath, [CLI, ...args], {

@@ -1,0 +1,18 @@
+{
+  "name": "kenshu-loop",
+  "version": "0.1.0",
+  "description": "kenshu-loop スキル同梱の CLI。kenshu-loop.mjs が初回に依存を入れてから src/cli.ts を Node の型ストリッピングで実行する",
+  "type": "module",
+  "private": true,
+  "license": "UNLICENSED",
+  "bin": {
+    "kenshu-loop": "kenshu-loop.mjs"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "@microsoft/tui-test": "0.1.1",
+    "zod": "4.6.7"
+  }
+}

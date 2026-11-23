@@ -9,7 +9,7 @@ import { parseArgs } from "node:util";
 
 const { values } = parseArgs({ options: { model: { type: "string", default: "sonnet" }, budget: { type: "string", default: "3" }, keep: { type: "string" }, kind: { type: "string", default: "cli" } } });
 const root = resolve(import.meta.dirname, "..");
-const cli = join(root, "dist", "cli.js");
+const cli = join(root, "skills", "kenshu-loop", "scripts", "kenshu-loop.mjs");
 const base = values.keep ?? mkdtempSync(join(tmpdir(), "kenshu-live-"));
 const target = join(base, "target");
 mkdirSync(target, { recursive: true });

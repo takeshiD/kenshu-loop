@@ -25,4 +25,4 @@
 - 分からないことは要求にせず、`context` に「未定」と書く。検収AIは不足を blocked/inquiry として返せる。
 - 認証情報や個人データを書かない。
 
-検証: `kenshu-loop init --order order.json` がスキーマ違反を具体的に報告する。
+検証: `kenshu-loop init --order order.json`（呼び出し方は SKILL.md）がスキーマ違反を具体的に報告する。

@@ -1,44 +1,50 @@
-// npm pack した配布物を新しいディレクトリにインストールし、インストール後のCLIを起動して確認する。
+// 配布物はスキルのディレクトリ skills/kenshu-loop/ だけ。npx skills add / 手動コピーと同じく
+// それだけを node_modules 抜きで別の場所へコピーし、同梱 CLI が初回セットアップから動くことを確認する。
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { cpSync, mkdtempSync, mkdirSync, existsSync, readdirSync, readFileSync } from "node:fs";
+import { join, relative, sep } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { ROOT } from "../helpers/project.ts";
 
-const sh = (cmd: string, args: string[], cwd: string, env: Record<string, string> = {}) =>
-  spawnSync(cmd, args, { cwd, encoding: "utf8", timeout: 300_000, env: { ...process.env, ...env } });
+const run = (args: string[], cwd: string) =>
+  spawnSync(process.execPath, args, { cwd, encoding: "utf8", timeout: 300_000, env: { ...process.env, npm_config_prefer_offline: "true" } });
 
-test("package: npm pack → 別ディレクトリへインストール → bin/スキル/サンプル/PTYが動く", () => {
-  const work = mkdtempSync(join(tmpdir(), "kenshu-pkg-"));
-  const pack = sh("npm", ["pack", "--pack-destination", work, "--json"], ROOT);
-  assert.equal(pack.status, 0, pack.stderr);
-  const info = JSON.parse(pack.stdout)[0];
-  const files: string[] = info.files.map((f: { path: string }) => f.path);
-  assert.ok(files.includes("dist/cli.js"));
-  assert.ok(files.includes("skills/kenshu-loop/SKILL.md"));
-  assert.ok(!files.some((f) => f.startsWith("src/") || f.startsWith("test/")), "ソースとテストは配布物に含めない");
-  const app = join(work, "app");
-  sh("mkdir", ["-p", app], work);
-  writeFileSync(join(app, "package.json"), JSON.stringify({ name: "consumer", private: true }));
-  const inst = sh("npm", ["install", "--no-audit", "--no-fund", "--prefer-offline", join(work, info.filename)], app);
-  assert.equal(inst.status, 0, inst.stderr);
-  const bin = join(app, "node_modules", ".bin", "kenshu-loop");
-  assert.ok(existsSync(bin));
-  const ver = sh(bin, ["--version"], app);
+test("skill: スキルのディレクトリだけをコピー → 初回セットアップ → bin/プロンプト/PTYが動く", () => {
+  const work = mkdtempSync(join(tmpdir(), "kenshu-skill-"));
+  const src = join(ROOT, "skills", "kenshu-loop");
+  const skill = join(work, ".claude", "skills", "kenshu-loop");
+  cpSync(src, skill, { recursive: true, filter: (p) => !relative(src, p).split(sep).includes("node_modules") });
+  assert.ok(!existsSync(join(skill, "scripts", "node_modules")), "コピー直後は依存が無い状態から始める");
+  for (const f of ["SKILL.md", "references/contractor.md", "scripts/kenshu-loop.mjs", "scripts/package-lock.json", "scripts/src/cli.ts", "assets/order-example.json"]) {
+    assert.ok(existsSync(join(skill, f)), `${f} がスキルに含まれる`);
+  }
+  const entry = join(skill, "scripts", "kenshu-loop.mjs");
+
+  // 初回: 依存を入れてから実行。stdout は CLI の出力だけ（npm の出力は stderr）
+  const ver = run([entry, "--version"], work);
   assert.equal(ver.status, 0, ver.stderr);
-  assert.equal(ver.stdout.trim(), info.version);
-  const ex = sh(bin, ["schema", "order-example"], app);
+  assert.equal(ver.stdout.trim(), "0.1.0");
+  assert.match(ver.stderr, /依存パッケージを導入しています/);
+  assert.ok(readdirSync(join(skill, "scripts", "node_modules")).includes("zod"));
+  // 2回目以降はセットアップしない
+  const again = run([entry, "--version"], work);
+  assert.equal(again.status, 0, again.stderr);
+  assert.doesNotMatch(again.stderr, /依存パッケージ/);
+
+  const ex = run([entry, "schema", "order-example"], work);
   assert.equal(ex.status, 0, ex.stderr);
-  assert.equal(JSON.parse(ex.stdout).schema, "kenshu-loop/order@1");
-  const pkgDir = join(app, "node_modules", "kenshu-loop");
-  const sc = sh(bin, ["term", "run-scenario", join(pkgDir, "examples", "todo-tui", "scenario.json"), "--cwd", join(pkgDir, "examples", "todo-tui"), "--out", join(work, "sc")], app);
+  assert.deepEqual(JSON.parse(ex.stdout), JSON.parse(readFileSync(join(ROOT, "examples", "memo-cli", "order.json"), "utf8")), "雛形は examples/memo-cli と同じ");
+
+  const todo = join(ROOT, "examples", "todo-tui");
+  const sc = run([entry, "term", "run-scenario", join(todo, "scenario.json"), "--cwd", todo, "--out", join(work, "sc")], work);
   assert.equal(sc.status, 0, sc.stdout + sc.stderr);
-  // init が同梱スキルからプロンプトを読めること（run の前提）
+
+  // init がコピー先スキルの references からプロンプトを読めること（run の前提）
   const target = join(work, "target");
-  sh("mkdir", ["-p", target], work);
-  const init = sh(bin, ["init", "--dir", target, "--order", join(pkgDir, "examples", "memo-cli", "order.json")], app);
+  mkdirSync(target);
+  const init = run([entry, "init", "--dir", target, "--order", join(ROOT, "examples", "memo-cli", "order.json")], work);
   assert.equal(init.status, 0, init.stderr);
   assert.match(init.stdout, /受注AIの権限: permission_mode=acceptEdits/);
 });

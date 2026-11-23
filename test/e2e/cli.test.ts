@@ -1,4 +1,4 @@
-// 配布物(dist/cli.js)を実プロセスとして起動し、args/stdout/stderr/終了コード/ファイルを検証する。
+// スキル同梱の CLI 入口(skills/kenshu-loop/scripts/kenshu-loop.mjs)を実プロセスとして起動し、args/stdout/stderr/終了コード/ファイルを検証する。
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { cli, cliAsync, waitFor } from "../helpers/cli.ts";
 import { FAKE_CLAUDE, ROOT, TODO, memoSubmission, acceptVerdict, trialOk, memoCopy } from "../helpers/project.ts";
-import { pidAlive } from "../../src/store.ts";
+import { pidAlive } from "../../skills/kenshu-loop/scripts/src/store.ts";
 
 function setup(script: unknown, orderPath = join(ROOT, "examples", "memo-cli", "order.json")) {
   const base = mkdtempSync(join(tmpdir(), "kenshu-e2e-"));
@@ -26,7 +26,7 @@ test("CLI: --help/--version/不正な引数の終了コードと出力先", () =
   const h = cli(["--help"]);
   assert.equal(h.code, 0);
   assert.match(h.stdout, /kenshu-loop init/);
-  assert.equal(cli(["--version"]).stdout.trim(), JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version);
+  assert.equal(cli(["--version"]).stdout.trim(), JSON.parse(readFileSync(join(ROOT, "skills", "kenshu-loop", "scripts", "package.json"), "utf8")).version);
   const bad = cli(["frobnicate"]);
   assert.equal(bad.code, 1);
   assert.match(bad.stderr, /不明なコマンド/);

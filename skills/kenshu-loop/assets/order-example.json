@@ -1,0 +1,14 @@
+{
+  "schema": "kenshu-loop/order@1",
+  "title": "端末で使うメモCLI",
+  "summary": "思いついたことを端末からすぐ記録し、一覧・削除できるCLIがほしい。",
+  "deliverable_type": "cli",
+  "context": "Linuxの端末で1日に数回使う。日本語のメモが中心。",
+  "requirements": [
+    { "id": "R1", "kind": "goal", "text": "memo add <テキスト> でメモを追加し、memo list で追加順に番号付きで一覧できる", "must": true },
+    { "id": "R2", "kind": "usage", "text": "日本語を含むメモがそのまま保存・表示される", "must": true },
+    { "id": "R3", "kind": "goal", "text": "memo rm <番号> で削除でき、存在しない番号は非0終了とエラーメッセージで知らせる", "must": true },
+    { "id": "R4", "kind": "constraint", "text": "データは $HOME/.memo.json（MEMO_FILE で変更可）に保存し、ネットワークに接続しない", "must": true }
+  ],
+  "out_of_scope": ["同期機能", "GUI"]
+}

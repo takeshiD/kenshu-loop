@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { ClaudeCodeAdapter } from "../../src/harness/claude-code.ts";
-import type { CommandRunner, ExecRequest } from "../../src/exec.ts";
-import { defaultConfig } from "../../src/schema.ts";
+import { ClaudeCodeAdapter } from "../../skills/kenshu-loop/scripts/src/harness/claude-code.ts";
+import type { CommandRunner, ExecRequest } from "../../skills/kenshu-loop/scripts/src/exec.ts";
+import { defaultConfig } from "../../skills/kenshu-loop/scripts/src/schema.ts";
 
 function req(logPath: string) {
   return {
