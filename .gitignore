@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.kenshu/
+*.tgz
+.tui-test/
+test-output/

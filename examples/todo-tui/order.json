@@ -1,0 +1,14 @@
+{
+  "schema": "kenshu-loop/order@1",
+  "title": "端末TODOリスト",
+  "summary": "端末内で完結するTODOリストのTUIがほしい。",
+  "deliverable_type": "tui",
+  "context": "SSH先の狭い端末でも使う。日本語の長いタスク名を貼り付けることが多い。",
+  "requirements": [
+    { "id": "R1", "kind": "goal", "text": "初めて起動した人が画面の案内だけで項目の追加・完了切替・削除・終了の方法を見つけられる", "must": true },
+    { "id": "R2", "kind": "usage", "text": "長い日本語のタスク名を貼り付けて追加でき、狭い端末(40桁程度)でも表示が崩れない", "must": true },
+    { "id": "R3", "kind": "goal", "text": "誤って削除した項目を元に戻せる", "must": true },
+    { "id": "R4", "kind": "constraint", "text": "終了して再起動しても項目が残っている（$HOME/.todo-tui.json または TODO_FILE に保存）", "must": true }
+  ],
+  "out_of_scope": ["マウス操作", "同期"]
+}
