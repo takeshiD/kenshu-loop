@@ -4,9 +4,9 @@ import { mkdtempSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir, hostname } from "node:os";
 import { spawnSync } from "node:child_process";
-import { Store } from "../../src/store.ts";
-import { fingerprint, listDeliverableFiles, copyDeliverable } from "../../src/workspace.ts";
-import { redact } from "../../src/util.ts";
+import { Store } from "../../skills/kenshu-loop/scripts/src/store.ts";
+import { fingerprint, listDeliverableFiles, copyDeliverable } from "../../skills/kenshu-loop/scripts/src/workspace.ts";
+import { redact } from "../../skills/kenshu-loop/scripts/src/util.ts";
 
 const tmp = () => mkdtempSync(join(tmpdir(), "kenshu-unit-"));
 

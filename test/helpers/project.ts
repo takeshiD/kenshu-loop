@@ -1,13 +1,13 @@
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { Store } from "../../src/store.ts";
-import { defaultConfig, Order, type Config } from "../../src/schema.ts";
-import { newState, orderVersion, Orchestrator } from "../../src/orchestrator.ts";
-import { ClaudeCodeAdapter } from "../../src/harness/claude-code.ts";
-import { nodeRunner } from "../../src/exec.ts";
-import { TuiTestDriver } from "../../src/terminal/driver.ts";
-import { writeJsonAtomic } from "../../src/util.ts";
+import { Store } from "../../skills/kenshu-loop/scripts/src/store.ts";
+import { defaultConfig, Order, type Config } from "../../skills/kenshu-loop/scripts/src/schema.ts";
+import { newState, orderVersion, Orchestrator } from "../../skills/kenshu-loop/scripts/src/orchestrator.ts";
+import { ClaudeCodeAdapter } from "../../skills/kenshu-loop/scripts/src/harness/claude-code.ts";
+import { nodeRunner } from "../../skills/kenshu-loop/scripts/src/exec.ts";
+import { TuiTestDriver } from "../../skills/kenshu-loop/scripts/src/terminal/driver.ts";
+import { writeJsonAtomic } from "../../skills/kenshu-loop/scripts/src/util.ts";
 
 export const ROOT = resolve(import.meta.dirname, "..", "..");
 export const FAKE_CLAUDE = join(ROOT, "test", "fixtures", "fake-claude.mjs");
@@ -53,7 +53,7 @@ export async function runOrchestrator(p: Project, logs: string[] = []) {
     harness: new ClaudeCodeAdapter(config.harness.bin, nodeRunner),
     runner: nodeRunner,
     driverFactory: () => new TuiTestDriver(),
-    cliCommand: `node ${join(ROOT, "dist", "cli.js")}`,
+    cliCommand: `node ${join(ROOT, "skills", "kenshu-loop", "scripts", "kenshu-loop.mjs")}`,
     log: (l) => logs.push(l),
   });
   return orch.run();

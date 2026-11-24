@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { makeProject, runOrchestrator, memoSubmission, acceptVerdict, trialOk, memoCopy, fakeCalls, readEvents } from "../helpers/project.ts";
-import { fingerprint } from "../../src/workspace.ts";
+import { fingerprint } from "../../skills/kenshu-loop/scripts/src/workspace.ts";
 
 const reworkR3 = {
   output: {

@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { cli, waitFor } from "../helpers/cli.ts";
 import { ROOT, TODO } from "../helpers/project.ts";
-import { pidAlive } from "../../src/store.ts";
+import { pidAlive } from "../../skills/kenshu-loop/scripts/src/store.ts";
 
 test("term: start→press/paste→wait→screen(--style)→resize→restart で保存確認→stop、履歴と証拠が残る", async () => {
   const root = mkdtempSync(join(tmpdir(), "kenshu-term-e2e-"));

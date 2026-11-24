@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Submission, Verdict, Order } from "../../src/schema.ts";
-import { validateSubmission, validateVerdict, gateVerdict, criterionHash, changedCriteria } from "../../src/validate.ts";
+import { Submission, Verdict, Order } from "../../skills/kenshu-loop/scripts/src/schema.ts";
+import { validateSubmission, validateVerdict, gateVerdict, criterionHash, changedCriteria } from "../../skills/kenshu-loop/scripts/src/validate.ts";
 import { memoOrder, memoSubmission, acceptVerdict } from "../helpers/project.ts";
 
 const order = memoOrder();
