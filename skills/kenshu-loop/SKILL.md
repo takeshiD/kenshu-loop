@@ -27,13 +27,13 @@ node <このスキルのディレクトリ>/scripts/kenshu-loop.mjs <サブコ�
 
 ## 役割とこのスキルの使い分け
 
-| 状況 | 読むもの |
-|---|---|
-| 人間の依頼を発注書にする | [references/ordering.md](references/ordering.md) |
-| 受注AIとして実装・基準・証拠を出す（ランナーが自動で渡す） | [references/contractor.md](references/contractor.md) |
-| 検収AIの利用者試行（ランナーが自動で渡す） | [references/inspector-trial.md](references/inspector-trial.md) |
-| 検収AIの技術審査（ランナーが自動で渡す） | [references/inspector-review.md](references/inspector-review.md) |
-| 端末アプリを1操作ずつ動かす / シナリオを書く | [references/terminal.md](references/terminal.md) |
+| 状況                                                       | 読むもの                                                         |
+| ---                                                        | ---                                                              |
+| 人間の依頼を発注書にする                                   | [references/ordering.md](references/ordering.md)                 |
+| 受注AIとして実装・基準・証拠を出す（ランナーが自動で渡す） | [references/contractor.md](references/contractor.md)             |
+| 検収AIの利用者試行（ランナーが自動で渡す）                 | [references/inspector-trial.md](references/inspector-trial.md)   |
+| 検収AIの技術審査（ランナーが自動で渡す）                   | [references/inspector-review.md](references/inspector-review.md) |
+| 端末アプリを1操作ずつ動かす / シナリオを書く               | [references/terminal.md](references/terminal.md)                 |
 
 発注書の雛形は [assets/order-example.json](assets/order-example.json)（`kenshu-loop schema order-example` と同じ内容）。
 
