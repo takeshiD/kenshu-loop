@@ -86,7 +86,9 @@ programs.agent-skills = {
 - 認証済みの Claude Code CLI（`claude`）
 - git
 
-同梱 CLI は初回実行時に依存パッケージを `scripts/node_modules` へ導入します（ネットワーク接続が必要）。
+同梱 CLI は初回実行時に依存パッケージを `~/.cache/kenshu-loop` へ導入します（ネットワーク接続が必要）。
+導入先は `KENSHU_LOOP_HOME`（未設定なら `$XDG_CACHE_HOME/kenshu-loop`）で変えられます。
+スキルのディレクトリには書き込まないので、agent-skills-nix で Nix store に置いた場合も動きます。
 
 
 ## 設定（`.kenshu/config.json`）
