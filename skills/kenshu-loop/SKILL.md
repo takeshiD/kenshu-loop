@@ -18,7 +18,8 @@ node <このスキルのディレクトリ>/scripts/kenshu-loop.mjs <サブコ�
 ```
 
 以下と references/ で `kenshu-loop ...` と書いているものは、すべてこの形で実行する。
-初回だけ依存パッケージ（zod, @microsoft/tui-test）を `scripts/node_modules` に入れるので数秒かかり、ネットワークが要る。
+初回だけ依存パッケージ（zod, @microsoft/tui-test）を `~/.cache/kenshu-loop`（`KENSHU_LOOP_HOME` で変更可）に入れるので数秒かかり、ネットワークが要る。
+スキルのディレクトリには書かないので、読み取り専用の場所（Nix store など）に置いても動く。
 進捗は stderr に出て、stdout には CLI の本来の出力だけが出る。
 最初に `node <dir>/scripts/kenshu-loop.mjs setup` を実行しておくと、導入の失敗（Node が古い・npm が無い・オフライン）を発注前に見つけられる。
 失敗したら、表示された理由を人間に伝えて止まる。
